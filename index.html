@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta content="yes" name="apple-mobile-web-app-capable">
+  <meta content="yes" name="apple-touch-fullscreen">
+  <meta content="telephone=no,email=no" name="format-detection">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no" />
+  <link rel="stylesheet" href="./iconfont/iconfont.css">
+  <link rel="stylesheet" href="./css/index.css">
+  <title>模板</title>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="subject">
+      <a href="#" class="subject-box" id="fileUpload">
+        <div class="subject-main">
+          <div class="subject-icon">
+            <span class="iconfont  iconupload red-p"></span>
+          </div>
+          <div class="subject-content">
+            <p class="red-p">添加人像
+              <!-- <input type="file" accept='image/*'> -->
+            </p>
+          </div>
+        </div>
+        <input type="file" id="fileinput" class="inputfile" accept="image/*;">
+      </a>
+      <a href="face.html" class="subject-box">
+        <div class="subject-icon">
+          <span class="iconfont  iconrenlianshibie blue-p"></span>
+        </div>
+        <div class="subject-content">
+          <p class="blue-p">人像识别</p>
+        </div>
+      </a>
+    </div>
+    <!-- <img id="showimg" src="" alt=""> -->
+
+  </div>
+  <script src="js/jquery-3.4.1.js"></script>
+
+  <script>
+    var baseURL = 'https://192.168.86.113/spring-boot-service/face/api'
+
+    function getToken() {
+      $.get('https://192.168.86.113/spring-boot-service/face/token', function (res) {
+        console.log('res', res);
+      })
+    }
+
+    let imgList = [] // 存放图片
+    let fileinput = document.querySelector('#fileinput')
+    fileinput.addEventListener('change', function (e) {
+      addImg(e)
+    })
+
+    function addImg(e) {
+      e.preventDefault()
+      let files = e.target.files || e.dataTransfer.files
+      if (!files.length) return
+
+      const imgurl = files[0]
+      addImgPreview(imgurl)
+      e.target.value = '' // 清除input数据
+    }
+
+    function addImgPreview(file) {
+      // 是否支持不支持FileReader
+      if (!file || !window.FileReader) return
+
+      if (/^image/.test(file.type)) {
+        // 创建一个reader
+        var reader = new FileReader()
+        // 将图片将转成 base64 格式,并保存在reader中
+        reader.readAsDataURL(file)
+        // 读取成功后的回调
+        reader.onload = function (oFREvent) {
+          var base64Url = oFREvent.target.result
+          // console.log('base64Url', base64Url);
+          var fileStreamSize = calculaFileSize(base64Url)
+          console.log('fileStreamSize', fileStreamSize);
+
+          let compressAfterImgUrl = "";
+          let compressAfterImgSize = "";
+          ChangeSize(base64Url, function (base) {
+            // document.getElementById("showimg").src = base;
+            console.log("压缩后：" + base.length / 1024 + " " + base);
+            UpdateUserImg(base)
+          })
+        }
+      } else {
+        alert(`文件${file.name}不是图片。`)
+      }
+    }
+
+    function calculaFileSize(base64) {
+      // 计算base64文件流大小
+      base64 = base64.substring(22)
+      const equalIndex = base64.indexOf('=')
+      if (base64.indexOf('=') > 0) {
+        base64 = base64.substring(0, equalIndex)
+      }
+      var strLength = base64.length
+      var fileLength = parseInt(strLength - (strLength / 8) * 2)
+      return fileLength
+    }
+
+    function ChangeSize(base64Url, callback) {
+      const imgWidth = 640;
+      const imgHeight = 640;
+      let img = new Image();
+      img.src = base64Url;
+
+      // if (!img.width || img.width == 0) {
+      //   // 有时图片过大，会压缩失败，出现无法获取宽和高的情况
+      //   img.width = imgWidth;
+      //   img.height = imgHeight;
+      // }
+
+      img.onload = function () {
+        //默认按比例压缩  
+        var w = this.width,
+          h = this.height;
+        var quality = 0.7; // 默认图片质量为0.7  
+
+        //生成canvas  
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+
+        // 创建属性节点  
+        canvas.setAttribute("width", w);
+        canvas.setAttribute("height", h);
+
+        ctx.drawImage(this, 0, 0, w, h);
+        // quality值越小，所绘制出的图像越模糊  
+        var base64 = canvas.toDataURL('image/jpeg', quality);
+        // 回调函数返回base64的值  
+        callback(base64);
+
+      };
+    }
+
+    // 人员新增
+
+    function addUser(baseImg) {
+
+      var bodyContent = {
+        image: baseImg,
+        // 人像库id
+        repositoryId: '6',
+        // 人员id，以业务id为准
+        personId: '10',
+        name: 'testst',
+        cardId: 'tets',
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        url: baseURL,
+        type: "POST",
+        data: {
+          method: 'capacity.ai.face.user.add',
+          v: '1.0.0',
+          http_type: 'post',
+          bodyContent: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+    // 获取用户信息
+    function getUserInfo() {
+      var bodyContent = {
+        // 人像库id
+        repositoryId: '6',
+        // 人员id，以业务id为准
+        personId: '10',
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        url: baseURL,
+        type: "POST",
+        data: {
+          method: 'capacity.ai.face.user.get',
+          v: '1.0.0',
+          http_type: 'post',
+          bodyContent: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+    // 人员更新
+
+    function updateUser(baseImg) {
+
+      var bodyContent = {
+        image: baseImg,
+        // 人像库id
+        repositoryId: '6',
+        // 人员id，以业务id为准
+        personId: '10',
+        // name: 'testst',
+        // cardId: 'tets',
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        url: baseURL,
+        type: "POST",
+        data: {
+          method: 'capacity.ai.face.user.update',
+          v: '1.0.0',
+          http_type: 'post',
+          bodyContent: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+    // 获取用户人像图片
+
+    function getUserImg() {
+      var bodyContent = {
+        repositoryId: '6',
+        personId: '10'
+        // pageSize: 1,
+        // pageNum: 10
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        url: baseURL,
+        type: "GET",
+        data: {
+          method: 'capacity.ai.face.faceset.get',
+          v: '1.0.0',
+          http_type: 'get',
+          params: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+    // 更新用户人像图片
+    function UpdateUserImg(baseImg) {
+
+      var bodyContent = {
+        images: [{
+          image: baseImg
+        }],
+        // 人像库id
+        repositoryId: '6',
+        // 人员id，以业务id为准
+        personId: '10',
+        // name: 'testst',
+        // cardId: 'tets',
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        url: baseURL,
+        type: "POST",
+        data: {
+          method: 'capacity.ai.face.faceset.update',
+          v: '1.0.0',
+          http_type: 'post',
+          bodyContent: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+    // 删除用户人脸库
+
+
+
+    getToken();
+    getUserInfo();
+    getUserImg();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,51 @@
+@charset "UTF-8";
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0; }
+
+.face {
+  width: 100%;
+  height: 100%;
+  padding-top: 26.66667vw;
+  -webkit-box-sizing: border-box;
+          box-sizing: border-box; }
+  .face * {
+    -webkit-box-sizing: border-box;
+            box-sizing: border-box; }
+
+.face-circle {
+  width: 73.33333vw;
+  height: 73.33333vw;
+  position: absolute;
+  left: 50%;
+  margin-left: -36.66667vw;
+  top: 23.2vw; }
+
+.face-video {
+  width: 66.66667vw;
+  height: 66.66667vw;
+  margin: 0 auto;
+  position: relative;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  -webkit-backface-visibility: hidden;
+   -moz-backface-visibility: hidden;
+   -webkit-transform: translate3d(0, 0, 0);
+   -moz-transform: translate3d(0, 0, 0);
+  -webkit-appearance: none;
+  -webkit-transform: rotate(0deg); }
+  .face-video video {
+    width: 93.33333vw;
+    height: 93.33333vw;
+    position: absolute;
+    left: -13.33333vw;
+    top: -13.33333vw; }
+
+.face-info {
+  text-align: center;
+  margin-top: 6.66667vw;
+  font-size: 4.8vw; }

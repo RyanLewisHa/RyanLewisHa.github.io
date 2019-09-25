@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="yes" name="apple-touch-fullscreen">
+    <meta content="telephone=no,email=no" name="format-detection">
+    <meta name="viewport"
+        content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no" />
+    <link rel="stylesheet" href="./iconfont/iconfont.css">
+    <link rel="stylesheet" href="./css/mui.css">
+    <link rel="stylesheet" href="./css/index.css">
+    <title>模板</title>
+    <style>
+        body {
+            font-family: Arial, Roboto, 'Droid Sans', 'Hiragino Sans GB', 'Microsoft YaHei', 'Simsun', STXihei, 'sans-serif';
+            font-size: 14px;
+        }
+
+        dl:not(:last-child) {
+            overflow: hidden;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #dedede;
+        }
+
+        dt {
+            padding-bottom: 10px;
+            font-weight: bold;
+            color: #f32600;
+        }
+
+        dd {
+            margin: 0;
+            padding: 5px 0 0 20px;
+            border-left: 2px solid #cddc39;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div>
+        <div id="message">
+
+        </div>
+        <p id="error"></p>
+        <video style="width: 320px;height: 180px;"></video>
+        <canvas width="320" height="180 "></canvas>
+        <button id="take">take</button>
+        <button id="upload">upload</button>
+        <input style="display: none;" type="file" accept="image/*" />
+
+
+    </div>
+    <dl>
+        <dt>普通没有 <code>capture</code> 属性</dt>
+        <dd><input type="file"></dd>
+        <dd>
+            <p>没有 <code>capture</code> 捕获属性时，仅为选择上传文件。</p>
+        </dd>
+        <dt><code>capture=""</code> 为空的时候</dt>
+        <dd><input type="file" capture=""></dd>
+        <dd>
+            <p>当 <code>capture</code> 捕获属性为空时，基于 <code>capture</code>
+                的值为布尔值类型，所以这个时候可以看到启用了摄像头，<strong>后置摄像头</strong>开启拍照或者录像功能。</p>
+        </dd>
+        <dt><code>capture="user"</code> 前置摄像头</dt>
+        <dd><input type="file" capture="user"></dd>
+        <dd>
+            <p>当 <code>capture</code> 捕获属性为 <code>user</code> 时，开启前置摄像头的拍照或者录像功能。</p>
+        </dd>
+    </dl>
+    <dl>
+        <dt>类型：视频 多个文件</dt>
+        <dd><input type="file" accept="video/*" multiple=""></dd>
+        <dd>
+            <p>选择多个<strong>视频</strong>类型文件，未使用 <code>capture</code> 属性时。</p>
+        </dd>
+        <dt>类型：图片 多个文件</dt>
+        <dd><input type="file" accept="image/*" multiple=""></dd>
+        <dd>
+            <p>选择多个<strong>图片</strong>类型文件，未使用 <code>capture</code> 属性时。</p>
+        </dd>
+        <dt>无类型要求 多个文件</dt>
+        <dd><input type="file" multiple=""></dd>
+        <dd>
+            <p>选择多个<strong>视频</strong>或者<strong>图片</strong>类型文件，未使用 <code>capture</code> 属性时。</p>
+        </dd>
+    </dl>
+    <dl>
+        <dt><code>capture="user"</code> 前置摄像头 视频</dt>
+        <dd><input type="file" capture="user" accept="video/*" multiple=""></dd>
+        <dd>
+            <p>使用 <code>capture="user"</code> 开启前置摄像头时，设定为<strong>视频</strong>类型文件，手机中不会显示<em>照片</em>，同时
+                <code>multiple</code> 多文件上传无效。</p>
+        </dd>
+        <dt><code>capture="user"</code> 前置摄像头 图片</dt>
+        <dd><input type="file" capture="user" accept="image/*" multiple=""></dd>
+        <dd>
+            <p>使用 <code>capture="user"</code> 开启前置摄像头时，设定为<strong>图片</strong>类型文件，手机中不会显示<em>视频</em>，同时
+                <code>multiple</code> 多文件上传无效。</p>
+        </dd>
+    </dl>
+    <script src="./js/jquery-3.4.1.js"></script>
+    <script src="./js/mui.js"></script>
+    <script>
+        // document.querySelector("#message").innerHTML =
+        //     "getUserMedia" in navigator.mediaDevices
+        //         ? "api is exist"
+        //         : "api is not exist";
+
+        const constraints = {
+            audio: false,
+            video: {
+                width: 180,
+                height: 320,
+                facingMode: { exact: "environment" }
+            }
+        };
+        console.log('window.navigator',navigator.mediaDevices)
+        window.navigator.mediaDevices
+            .getUserMedia(constraints)
+            .then(mediaStream => {
+                const video = document.querySelector("video");
+                video.srcObject = mediaStream;
+                video.onloadedmetadata = e => {
+                    video.play();
+                };
+            })
+            .catch(err => {
+                document.querySelector("#error").innerHTML = err.name + ": " + err.message;
+            });
+        const video = document.querySelector("video");
+        const canvas = document.querySelector("canvas");
+        const take = document.querySelector("#take");
+        const upload = document.querySelector("#upload");
+
+        const drawImage = () => {
+            canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+        };
+        const uploadImg = () => {
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append("img", blob);
+                formData.append("123", "123");
+                fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .catch(error => console.error("Error:", error))
+                    .then(response => console.log("Success:", response));
+            });
+        };
+        take.addEventListener("click", drawImage);
+        upload.addEventListener("click", uploadImg);
+
+    </script>
+</body>
+
+</html>

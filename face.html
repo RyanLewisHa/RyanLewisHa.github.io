@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta content="yes" name="apple-mobile-web-app-capable">
+  <meta content="yes" name="apple-touch-fullscreen">
+  <meta content="telephone=no,email=no" name="format-detection">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no" />
+  <title>人脸识别</title>
+  <link rel="stylesheet" href="./css/face.css">
+
+</head>
+
+<body>
+  <!-- <div id="face">
+
+  </div> -->
+
+  <div class="face">
+    <div class="face-circle" id="face-chart">
+
+    </div>
+    <div class="face-video">
+      <video id="video" webkit-playsinline="true" playsinline="true" controls autoPlay muted loop preload="metadata">
+
+      </video>
+    </div>
+    <div class="face-info">
+      请直视摄像头，正在识别中，请稍等
+    </div>
+    <!-- <div class="canvas-box">
+      <button id="btn" onclick="initCanvas()"> 截图</button>
+    </div>
+    <img id="showimg" src="" alt=""> -->
+
+  </div>
+  <script src="./js/jquery-3.4.1.js"></script>
+  <script src="./js/moment.min.js"></script>
+  <script src="./js/echarts.js"></script>
+  <script>
+    var userID = '10';
+    var baseURL = 'https://192.168.86.113/spring-boot-service/face/api'
+    // var baseURL = 'http://192.168.86.16:8080/face/api';
+    // function getToken(callback) {
+    //   var f = callback
+    // $.get('http://192.168.86.16:8080/face/token', function (res, ) {
+    //   console.log('res');
+    //   f();
+    // })
+    // }
+
+    function getToken() {
+      $.get('https://192.168.86.113/spring-boot-service/face/token', function (res) {
+        console.log('res', res);
+      })
+    }
+
+    // 初始化video元素
+    let video = document.getElementById('video');
+
+    var myChart = echarts.init(document.getElementById('face-chart'));
+
+    // 初始化进度条图表
+    function initChart() {
+      var number = 10;
+      setChart(number);
+      var timer = setInterval(function () {
+        if (99 < number) {
+          clearInterval(timer)
+          return false
+        } else {
+          number = number + 1;
+          setChart(number);
+        }
+      }, 300)
+    }
+
+    // 进行图像生成
+
+    function initCanvas() {
+      let canvas = document.createElement('canvas');
+      canvas.width = 300;
+      canvas.height = 300;
+      let context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, 300, 300);
+      // let base64Data = canvas.toDataURL();
+      let base64Data = canvas.toDataURL("image/jpeg", .6);
+      // document.getElementById("showimg").src = base64Data;
+
+      console.log('base64', base64Data);
+      searchUser(base64Data)
+    }
+
+    // 设置进度条图表
+
+    function setChart(stateNumber) {
+      // echarts.init(document.getElementById('face-chart')).dispose()
+      // console.log(stateNumber)
+      var data = stateNumber; //数值大小
+      var max = 100; //满刻度大小
+      var option = {
+
+        backgroundColor: 'white',
+        "color": ["#fff", 'rgba(255,255,255,.5)', 'rgba(255,255,255,.2)'],
+        "series": [{
+          "type": "pie",
+          "center": ["50%", "50%"],
+          "radius": ["98%", "90%"],
+          "hoverAnimation": false,
+
+          "data": [{
+            "name": "",
+            "value": data,
+            "itemStyle": {
+              "normal": {
+                color: { // 完成的圆环的颜色
+                  colorStops: [{
+                    offset: 0,
+                    color: '#00cefc' // 0% 处的颜色
+                  }, {
+                    offset: 1,
+                    color: '#367bec' // 100% 处的颜色
+                  }]
+                },
+              }
+            },
+            "label": {
+              "show": false,
+              "position": "center",
+              "color": "#fff",
+              "fontSize": 38,
+              "fontWeight": "bold",
+              "formatter": function (o) {
+                return data
+              }
+            },
+            labelLine: {
+              show: false,
+              emphasis: {
+                show: false
+              }
+            }
+          },
+          { //画剩余的刻度圆环
+            "name": "",
+            "value": max - data,
+            itemStyle: {
+              color: '#dddddd'
+            },
+            "label": {
+              show: false
+            },
+            labelLine: {
+              show: false,
+              emphasis: {
+                show: false
+              }
+            },
+          }
+          ]
+        }]
+      }
+
+      myChart.setOption(option);
+    }
+
+    //访问用户媒体设备的兼容方法
+    function getUserMedia(constraints, success, error) {
+      if (navigator.mediaDevices.getUserMedia) {
+        //最新的标准API
+        navigator.mediaDevices.getUserMedia(constraints).then(success).catch(error);
+      } else if (navigator.webkitGetUserMedia) {
+        //webkit核心浏览器
+        navigator.webkitGetUserMedia(constraints, success, error)
+      } else if (navigator.mozGetUserMedia) {
+        //firfox浏览器
+        navigator.mozGetUserMedia(constraints, success, error);
+      } else if (navigator.getUserMedia) {
+        //旧版API
+        navigator.getUserMedia(constraints, success, error);
+      }
+    }
+
+    function success(stream) {
+      //兼容webkit核心浏览器
+      let CompatibleURL = window.URL || window.webkitURL;
+      //将视频流设置为video元素的源
+      console.log('url', CompatibleURL);
+      console.log(stream);
+
+      video.srcObject = stream;
+      video.play();
+      initChart();
+      initCanvas();
+    }
+
+    function error(error) {
+      console.log(`访问用户媒体设备失败${error.name}, ${error.message}`);
+    }
+
+    if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
+      //调用用户媒体设备, 访问摄像头
+      getUserMedia({ video: { width: 300, height: 300 } }, success, error);
+    } else {
+      alert('不支持访问用户媒体');
+    }
+
+    // 获取token 
+    function showData(data) {
+      console.info("调用showData");
+
+      var result = JSON.stringify(data);
+      $("#text").val(result);
+    }
+
+    // 获取人像库信息
+
+    function getUserData() {
+
+      var bodyContent = {
+        repositoryId: '6',
+        pageSize: '1',
+        pageNum: '10',
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        // url: "http://192.168.86.16:8080/face/api",
+        url: baseURL,
+        type: "get",
+        data: {
+          method: 'capacity.ai.face.dataset.get',
+          v: '1.0.0',
+          http_type: 'get',
+          params: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+    // 获取用户信息
+    function getUserInfo() {
+
+      var bodyContent = {
+        repositoryId: '6',
+        // pageSize: 1,
+        // pageNum: 10
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        url: baseURL,
+        type: "POST",
+        data: {
+          method: 'capacity.ai.face.user.get',
+          v: '1.0.0',
+          http_type: 'post',
+          bodyContent: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+
+    // 人脸识别
+    function searchUser(image) {
+      console.log('search start');
+      var bodyContent = {
+        repositoryId: '6',
+        image: image,
+        top: 2,
+        threshold: 'NORMAL'
+      }
+
+      var jsonContent = JSON.stringify(bodyContent)
+
+      $.ajax({
+        // url: "http://192.168.86.16:8080/face/api",
+        url: baseURL,
+        type: "POST",
+        data: {
+          method: 'capacity.ai.face.search',
+          v: '1.0.0',
+          http_type: 'post',
+          bodyContent: jsonContent
+        },
+        success: function (result) {
+          console.log('result', result)
+        },
+        error: function (result) {
+          console.log('result', result)
+        }
+      })
+    }
+
+    // getUser();
+    function initAll() {
+      getToken();
+      getUserData();
+      getUserInfo();
+      // getUserImg();
+    }
+    // initAll();
+    // getToken(
+    //   initAll
+    // )
+  </script>
+</body>
+
+</html>
